@@ -16,25 +16,34 @@
 
 from tools import transfunction
 from tools import screenres
+from configparser import ConfigParser
 import time
 import cv2
 import os
 
-# Customizable variables
-xc = 0.3
-yc = 0.8
+config = ConfigParser()
+config.read("config.ini")
 
-numberOfStages = 2
+# Coefficients for perspective transformation
+xc = float(config.get("zoom", "xTransformation"))
+yc = float(config.get("zoom", "yTransformation"))
 
-# Initializing variables
+# Number of stages to use when creating the zoom animation
+numberOfStages = int(config.get("zoom", "numStages"))
+
+# Boolean value to determine whether or not to show debug statements
+DEBUG = config.getboolean("misc", "debug")
+
+# Determining the screen resolution
 w = screenres.width
 h = screenres.height
 
+# Initializing other variables
 stageNumber = 0
 lastTime = ""
 
 # Preparing the initial image and ROI database
-rawImg = cv2.imread("image.jpg")
+rawImg = cv2.imread(config.get("misc", "imgFile"))
 img = cv2.resize(rawImg, (w, h))
 roiList = [img]
 
@@ -98,7 +107,7 @@ def getCommand(lastTime):
 # Zooming in/out based on pipe data
 def zoom(img, status, zoomFactor, currentStage, numberOfStages):
     if status == "f":
-        stageFactor = zoomFactor/numberOfStages
+        stageFactor = zoomFactor / numberOfStages
 
         for i in range(currentStage + 1, currentStage + numberOfStages + 1):
             newImg, stageNumber = zoomIn(img, i, stageFactor)
@@ -129,8 +138,8 @@ def zoom(img, status, zoomFactor, currentStage, numberOfStages):
         time.sleep(2.5)
         return newImg, stageNumber
 
-    else:
-        print("[ERROR] Decision not possible!")
+    elif DEBUG:
+        print("[ERROR] Zoom decision not possible!")
 
 
 # Setting full-screen property and nullifying the infamous startup bug

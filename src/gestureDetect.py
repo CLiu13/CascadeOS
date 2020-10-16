@@ -20,39 +20,46 @@ from tools.processWhitePoints import *
 from tools.recordGesture import *
 from tools.filterData import *
 from tools.recordData import *
+from configparser import ConfigParser
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
 import cv2
 
+config = ConfigParser()
+config.read("config.ini")
+
 # Image resolution of captured frames
-IMG_SIZE = 256
+IMG_SIZE = int(config.get("image", "imgResolution"))
 
 # Size of the surrounding region utilized
 # when appying a Gaussian blur on frames
-BLUR_REGION = 5
+BLUR_REGION = int(config.get("image", "blurRegion"))
 
 # Cutoff for gray intensity value of pixels when thresholding frames
-PIXEL_INTENSITY_THRESHOLD = 10
+PIXEL_INTENSITY_THRESHOLD = int(config.get("image", "intensityThreshold"))
 
 # Number of elements to analyze when calculating
 # trends in x-axis and y-axis movement
-DATA_WINDOW_SIZE = 10
+DATA_WINDOW_SIZE = int(config.get("data", "windowSize"))
 
 # Cutoff values for data points when being filtered
-LOWER_OUTLIER_CUTOFF = 25
-UPPER_OUTLIER_CUTOFF = 150
+LOWER_OUTLIER_CUTOFF = int(config.get("data", "lowerCutoff"))
+UPPER_OUTLIER_CUTOFF = int(config.get("data", "upperCutoff"))
 
 # Cutoff values for calculated trends to compare with when detecting gestures
-X_DATA_THRESHOLD = 0.5
+X_DATA_THRESHOLD = float(config.get("data", "xThreshold"))
 Y_DATA_THRESHOLD = int(0.25 * IMG_SIZE)
+
+# Zoom scale factor value to pass through the pipe for zoomDisplay.py
+ZOOM_FACTOR = float(config.get("zoom", "scaleFactor"))
 
 # Value at which the gesture detection will
 # terminate and record all data in files
-FRAME_COUNT_LIMIT = int(input("Enter a frame count limit: "))
+FRAME_COUNT_LIMIT = int(config.get("misc", "frameLimit"))
 
-# Zoom scale factor value to pass through the pipe for zoomDisplay.py
-ZOOM_FACTOR = 0.4
+# Boolean value to determine whether or not to show debug statements
+DEBUG = config.getboolean("misc", "debug")
 
 # Initialize data lists
 xData = []
@@ -115,7 +122,11 @@ while frameCount <= FRAME_COUNT_LIMIT:
 
         if gestureDetected is not None:
             recordGesture(gestureDetected, ZOOM_FACTOR)
-            print("[INFO] Gesture detected: " + gestureDetected)
+
+            if DEBUG:
+                print("[INFO] Gesture detected: " + gestureDetected)
 
 recordData(xData, xDataFiltered, yData, yDataFiltered)
-print("[INFO] Data recorded!")
+
+if DEBUG:
+    print("[INFO] Data recorded!")
